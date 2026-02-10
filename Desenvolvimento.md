@@ -129,6 +129,7 @@ Escolha:
 
 ## ✅ Resultado
 
+```kotlin
 ktProfissional/
     ├─ app/
     ├─ gradle/
@@ -136,6 +137,7 @@ ktProfissional/
     ├─ gradlew.bat
     ├─ settings.gradle.kts
     └─ gradle.properties
+```
 
 Isso é:
 
