@@ -1,6 +1,6 @@
-<h2 style="text-align: center; color: black;">Relatório do desenvolvimento do projeto kotlin</h2>
+# <h2 style="text-align: center; color: black;">Relatório do desenvolvimento do projeto kotlin</h2>
 
-<h1 style="text-align: center; color: blue">🚀 ktProfissional</h1>
+# <h1 style="text-align: center; color: blue">🚀 ktProfissional</h1>
 
 ##
 
@@ -375,6 +375,8 @@ A partir daí, avançamos sem voltar atrás.
 🔐 Fase concluída.
 
 ***
+
+> # 🔄 Projeto ktProfissional
 > Seguir com a transcrição do projeto (3)
 
 ***
@@ -528,6 +530,7 @@ Se você quiser, eu te passo **o pacote completo** agora:
 Você quer que o `ktProfissional` seja **CLI (terminal)**, **API**, ou **biblioteca** como objetivo final?
 
 ***
+> # 🔄 Projeto ktProfissional
 > seguir com a transcrição do projeto (4)
 > Versionando o projeto no git
 
@@ -644,7 +647,7 @@ git push -u origin main
 
 ***
 
-<h5 style="text-align: center;">✅ Transcrição do desenvovimento<h5>
+> # 🔄 Projeto ktProfissional
 
 > Seguindo com a transcrição do desenvolvimento.
 > Seguindo com a fase (5)
@@ -743,8 +746,7 @@ Você já tem os textos nos commits; dá para organizar isso lindamente no repos
 
 ***
 
-<h5 style="text-align: center;">✅ Transcrição do desenvovimento<h5>
-
+> # 🔄 Projeto ktProfissional
 > Seguindo com a transcrição do desenvolvimento.
 > Seguindo com a fase (6)
 
@@ -974,3 +976,193 @@ Isso **não é iniciante**.
 5️⃣ Transformar em **template reutilizável**
 
 Diga o número e seguimos.
+
+---
+
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (7)
+
+---
+
+> # 🧭 Regra de negócio
+
+---
+
+Perfeito. Vamos criar **a primeira regra de negócio real no `domain`**, do jeito **correto, profissional e escalável**, sem “exemplo de brinquedo”.
+
+> ✅ Não encontrei nenhum arquivo, e‑mail ou reunião sua no Microsoft 365 descrevendo regras de negócio prévias para o `ktProfissional`, então vamos **definir a regra do zero**, de forma consciente e bem documentada.
+
+***
+
+# 🎯 Regra de negócio escolhida (simples, mas REAL)
+
+Vamos implementar uma regra **clássica e realista**, comum em sistemas profissionais:
+
+## ✅ **Regra: Validação de idade mínima para cadastro**
+
+> Uma pessoa **só pode ser considerada “apta”** se tiver **idade mínima configurável** (ex.: 18 anos).
+
+Por que essa regra é boa para começar?
+
+*   ✅ é domínio puro (não depende de app, banco ou UI)
+*   ✅ é testável
+*   ✅ evolui facilmente (ex.: exceções, tipos de pessoa, regras legais)
+*   ✅ você já tem projetos antigos de “idade”, então faz sentido conceitual
+
+***
+
+# 🧱 Onde isso entra na arquitetura
+
+    domain → define o que é válido ou não
+    service → usa a regra
+    app → apenas chama
+
+Hoje faremos **SOMENTE o domain**.
+
+***
+
+# 📁 Estrutura no domain
+
+Vamos criar no caminho:
+
+    app/src/main/kotlin/br/com/ktprofissional/domain
+
+E adicionar **3 arquivos**, cada um com uma responsabilidade clara.
+
+***
+
+## 1️⃣ Entidade de domínio: `Pessoa.kt`
+
+```kotlin
+package br.com.ktprofissional.domain
+
+/**
+ * Representa uma pessoa dentro do domínio do sistema.
+ *
+ * @property nome Nome da pessoa
+ * @property idade Idade da pessoa em anos
+ */
+data class Pessoa(
+    val nome: String,
+    val idade: Int
+)
+```
+
+📌 Observações:
+
+*   `data class` → domínio simples e imutável
+*   sem validação aqui (regra vem depois)
+
+***
+
+## 2️⃣ Regra de negócio: `RegraMaioridade.kt`
+
+```kotlin
+package br.com.ktprofissional.domain
+
+/**
+ * Regra de negócio responsável por validar se uma pessoa
+ * atende à idade mínima exigida.
+ */
+class RegraMaioridade(
+    private val idadeMinima: Int = 18
+) {
+
+    /**
+     * Verifica se a pessoa é considerada apta segundo a regra de idade mínima.
+     *
+     * @param pessoa Pessoa a ser avaliada
+     * @return true se a idade for maior ou igual à idade mínima
+     */
+    fun isApta(pessoa: Pessoa): Boolean {
+        return pessoa.idade >= idadeMinima
+    }
+}
+```
+
+📌 Isso é **domínio puro**:
+
+*   não imprime
+*   não lança exceção desnecessária
+*   não depende de framework
+*   facilmente testável
+
+***
+
+## 3️⃣ Exceção de domínio (opcional, mas profissional): `PessoaNaoAptaException.kt`
+
+```kotlin
+package br.com.ktprofissional.domain
+
+/**
+ * Exceção lançada quando uma pessoa não atende
+ * às regras de negócio do domínio.
+ */
+class PessoaNaoAptaException(message: String) : RuntimeException(message)
+```
+
+> Ainda não vamos usar essa exceção, mas **já estamos preparando o domínio para crescer**.
+
+***
+
+# ✅ Testando a regra rapidamente (sem testes formais ainda)
+
+Abra o `Main.kt` (temporariamente, só para validar):
+
+```kotlin
+package br.com.ktprofissional.app
+
+import br.com.ktprofissional.domain.Pessoa
+import br.com.ktprofissional.domain.RegraMaioridade
+
+fun main() {
+    val pessoa = Pessoa(nome = "João", idade = 17)
+    val regra = RegraMaioridade()
+
+    println("Pessoa apta? ${regra.isApta(pessoa)}")
+}
+```
+
+Execute:
+
+```bash
+./gradlew run
+```
+
+Saída esperada:
+
+    Pessoa apta? false
+
+✅ Regra funcionando.
+
+***
+
+# 🧠 Por que isso é “regra de negócio de verdade”
+
+Você **não fez**:
+
+*   lógica jogada no `main`
+*   validação espalhada
+*   regra acoplada à UI
+
+Você **fez**:
+
+*   domínio isolado
+*   regra explícita
+*   código legível
+*   base para testes
+
+Isso é **arquitetura limpa na prática**, não teoria.
+
+***
+
+# ✅ Próximo passo natural (ordem correta)
+
+Agora temos três caminhos **certos** — escolha **um**:
+
+1️⃣ **Criar testes JUnit para essa regra de domínio** ✅ (mais recomendado)  
+2️⃣ Criar um **service** que usa essa regra (caso de uso)  
+3️⃣ Evoluir a regra (ex.: idade mínima variável por tipo de pessoa)
+
+👉 Diga **1, 2 ou 3** e seguimos imediatamente, mantendo o nível profissional.
