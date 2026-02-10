@@ -1,15 +1,6 @@
-# Gradle caches e saída de build
 .gradle/
 **/build/
-
-# kotlin compiler cache (kotlin 2.x)
 .kotlin/
-
-# IDEs
 .idea/
 *.iml
 out/
-
-# OS
-.DS_Store
-Thumbs.db
