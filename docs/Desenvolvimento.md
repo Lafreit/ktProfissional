@@ -1166,3 +1166,425 @@ Agora temos três caminhos **certos** — escolha **um**:
 3️⃣ Evoluir a regra (ex.: idade mínima variável por tipo de pessoa)
 
 👉 Diga **1, 2 ou 3** e seguimos imediatamente, mantendo o nível profissional.
+
+---
+
+> # ❓ Git. Resolvendo o .gitignore e arquivos que não deveriam ser rastreados.
+
+## Soluções possíveis.
+
+---
+# Primeira possibilidade.
+
+---
+Você não está errando — isso é **o comportamento normal de um projeto Gradle/Kotlin** após rodar `./gradlew run`: ele gera **artefatos de build e caches** dentro de `build/` (e às vezes `.gradle/` / `.kotlin/`). Esses arquivos **não devem** ir para o Git. O que você está vendo em “Changes not staged…” são exatamente esses arquivos gerados. ✅
+
+A solução profissional tem **duas partes**:
+
+1.  **Ignorar** esses diretórios no `.gitignore` (para não voltarem a aparecer)
+2.  Se algum deles já estiver sendo “monitorado” pelo Git, **remover do índice** (sem apagar do disco) usando `git rm --cached`
+
+> Importante: o Git **não ignora arquivos que já estão sendo rastreados**, mesmo que você coloque no `.gitignore`. Isso é regra do Git. [\[git-scm.com\]](https://git-scm.com/docs/gitignore)
+
+***
+
+## ✅ 1) Atualize o `.gitignore` (Gradle + Kotlin + IDE)
+
+Abra o `.gitignore` na raiz do `ktProfissional` e garanta que tenha pelo menos isto:
+
+```gitignore
+# Gradle caches e saída de build
+.gradle/
+**/build/
+
+# Kotlin compiler cache (Kotlin 2.x)
+.kotlin/
+
+# IDEs
+.idea/
+*.iml
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+```
+
+Essas regras batem com templates amplamente usados para Gradle (`.gradle` e `**/build/`)   
+e com a recomendação oficial do Kotlin para **não versionar `.kotlin/`**.  
+E também é consenso que `.gradle` é cache e não deve ser commitado. [\[gitignore.org\]](https://gitignore.org/Gradle), [\[github.com\]](https://github.com/github/gitignore/blob/main/Gradle.gitignore) [\[kotlinlang.org\]](https://kotlinlang.org/docs/gradle-configure-project.html) [\[stackoverflow.com\]](https://stackoverflow.com/questions/17200831/should-the-gradle-folder-be-added-to-version-control)
+
+***
+
+## ✅ 2) Faça o Git “esquecer” tudo que é build/cache (sem apagar seus arquivos)
+
+Como esses `build/...` estão aparecendo em **“Changes not staged”**, há grande chance de eles já terem sido adicionados em algum momento (ou você rodou um `git add -A` antes do ignore ficar correto).
+
+Rode na raiz do repositório:
+
+```bash
+# remove do índice (Git), mas mantém no seu disco
+git rm -r --cached build app/build .gradle .kotlin 2>/dev/null || true
+```
+
+Por que funciona? Porque `git rm --cached` remove do **index** (rastreamento) sem deletar do seu working tree. [\[geeksforgeeks.org\]](https://www.geeksforgeeks.org/git/how-to-ignore-files-that-have-already-been-committed-to-the-repo/), [\[slingacademy.com\]](https://www.slingacademy.com/article/how-to-exclude-files-from-being-tracked-by-git/), [\[stackoverflow.com\]](https://stackoverflow.com/questions/54575972/difference-between-git-rm-git-rm-cached)
+
+> Se você não tiver `build/` no root mas tiver em `app/build/`, esse comando cobre os dois.
+
+***
+
+## ✅ 3) Volte seu `Main.kt` para o que você quer commitado (opcional)
+
+Você já tem `Main.kt` staged como “modified”. Isso está OK **se você quer** commitar essa mudança (ex.: usar a regra no main).  
+Se foi só teste e você não quer commitar o `Main.kt` agora:
+
+```bash
+git restore --staged Main.kt
+git restore Main.kt
+```
+
+*(Isso tira do stage e descarta a alteração local no arquivo.)*
+
+***
+
+## ✅ 4) Agora faça o commit só do que importa (domain + main se você quiser)
+
+Veja o status:
+
+```bash
+git status
+```
+
+Você deve ficar com:
+
+*   staged: seus arquivos de `domain/` e talvez `Main.kt`
+*   nada/zero de `build/` aparecendo
+
+Então:
+
+```bash
+git add .gitignore
+git add app/src/main/kotlin/br/com/ktprofissional/domain
+# se você quiser incluir também o Main.kt:
+git add app/src/main/kotlin/br/com/ktprofissional/app/Main.kt
+
+git commit -m "feat: adiciona regra de maioridade no domínio"
+git push
+```
+
+***
+
+# ✅ O que estava acontecendo (em 1 linha)
+
+Você estava vendo **arquivos gerados pelo Gradle** (classes `.class` e caches em `build/`) entrando no radar do Git porque **build/cache precisam estar no `.gitignore`** e, se já foram rastreados, precisam de `git rm --cached`. [\[gitignore.org\]](https://gitignore.org/Gradle), [\[stackoverflow.com\]](https://stackoverflow.com/questions/17200831/should-the-gradle-folder-be-added-to-version-control), [\[git-scm.com\]](https://git-scm.com/docs/gitignore), [\[stackoverflow.com\]](https://stackoverflow.com/questions/54575972/difference-between-git-rm-git-rm-cached)
+
+***
+
+## Pequena dica para o futuro
+
+Depois de rodar o projeto, é normal o `git status` sujar **se build não estiver ignorado**. Com o `.gitignore` certo, isso desaparece.
+
+***
+
+### Só mais uma coisa (bem objetiva)
+
+Depois de fazer os passos acima, rode:
+
+```bash
+git status
+```
+
+e cole aqui as primeiras linhas. Assim eu confirmo que ficou **limpo** (sem build/cache) e que seu commit vai só com o domínio.
+
+---
+## Segunda possibilidade
+
+---
+
+Entendi — e dá pra explicar **com precisão** por que ainda aparece essa “sujeira” e como **zerar de vez**.
+
+## ✅ Por que ainda aparece `app/build/...` no `git status`
+
+Esses arquivos em `app/build/...` **não deveriam aparecer** *se estivessem apenas “não rastreados”*, porque um `.gitignore` com `**/build/` os esconderia.  
+Mas eles estão aparecendo como **modified**, o que indica que **eles estão sendo rastreados pelo Git** (já entraram no índice/histórico em algum momento). E o Git deixa bem claro:
+
+> **Arquivos já rastreados não são afetados pelo `.gitignore`.** [\[git-scm.com\]](https://git-scm.com/docs/gitignore)
+
+Então a correção não é “só colocar no .gitignore”. É:
+
+1.  garantir que o ignore está correto (para o futuro)
+2.  mandar o Git **parar de rastrear** `app/build/` (tirar do índice) usando `git rm --cached` [\[stackoverflow.com\]](https://stackoverflow.com/questions/1139762/ignore-files-that-have-already-been-committed-to-a-git-repository), [\[blog.mikihands.com\]](https://blog.mikihands.com/en/whitedec/2025/6/19/git-untrack-ignore-guide/)
+
+***
+
+# ✅ Correção definitiva (faça exatamente nesta ordem)
+
+## 1) Confirme/ajuste o `.gitignore` na raiz do repo
+
+No `ktProfissional/.gitignore`, deixe pelo menos:
+
+```gitignore
+.gradle/
+**/build/
+.kotlin/
+.idea/
+*.iml
+out/
+```
+
+O padrão `**/build/` é o recomendado em templates de Gradle para ignorar builds em qualquer módulo.   
+E `.kotlin/` deve ser ignorado (cache do compilador Kotlin). [\[gitignore.org\]](https://gitignore.org/Gradle), [\[github.com\]](https://github.com/github/gitignore/blob/main/Gradle.gitignore) [\[kotlinlang.org\]](https://kotlinlang.org/docs/gradle-configure-project.html), [\[github.com\]](https://github.com/gradle/gradle/issues/35261)
+
+## 2) Faça o Git “esquecer” o build do módulo `app` (sem apagar do disco)
+
+Na raiz do repositório:
+
+```bash
+git rm -r --cached app/build
+```
+
+Isso remove **do índice** (deixa de rastrear), mas mantém os arquivos localmente. [\[stackoverflow.com\]](https://stackoverflow.com/questions/1139762/ignore-files-that-have-already-been-committed-to-a-git-repository), [\[blog.mikihands.com\]](https://blog.mikihands.com/en/whitedec/2025/6/19/git-untrack-ignore-guide/)
+
+> Se aparecer “pathspec did not match any files”, significa que `app/build` **não estava rastreado** (mas, pelo seu `git status`, ele está). [\[stackoverflow.com\]](https://stackoverflow.com/questions/1139762/ignore-files-that-have-already-been-committed-to-a-git-repository)
+
+## 3) Commit da limpeza
+
+```bash
+git add .gitignore
+git commit -m "chore: remove artefatos de build do controle de versão"
+git push
+```
+
+## 4) Verificação final
+
+```bash
+git status
+```
+
+O esperado: **working tree clean** (ou apenas mudanças reais de código), e **nunca mais** aparecer `app/build/...` depois de rodar `./gradlew run`.
+
+***
+
+# ✅ Se você quiser “nuclear option” (resolve qualquer cache rastreado em todo o repo)
+
+Se por algum motivo existirem outros caches rastreados além de `app/build`, você pode aplicar o procedimento padrão de “reindexar” o repositório:
+
+```bash
+git rm -r --cached .
+git add .
+git commit -m "chore: reindexa repo respeitando .gitignore"
+git push
+```
+
+Esse método é amplamente usado para fazer o `.gitignore` “passar a valer” para o que já estava rastreado.   
+(Use só se o passo `app/build` não bastar.) [\[stackoverflow.com\]](https://stackoverflow.com/questions/1139762/ignore-files-that-have-already-been-committed-to-a-git-repository), [\[blog.mikihands.com\]](https://blog.mikihands.com/en/whitedec/2025/6/19/git-untrack-ignore-guide/)
+
+***
+
+# 🔎 Extra útil: confirmar que realmente está rastreado
+
+Se quiser enxergar isso de forma objetiva, rode:
+
+```bash
+git ls-files app/build | head
+```
+
+Se sair qualquer coisa, pronto: **estava rastreado** e `git rm --cached` é a solução. (O raciocínio é o mesmo descrito nas referências acima.) [\[stackoverflow.com\]](https://stackoverflow.com/questions/1139762/ignore-files-that-have-already-been-committed-to-a-git-repository), [\[git-scm.com\]](https://git-scm.com/docs/gitignore)
+
+***
+
+## Pequeno detalhe: typo no commit
+
+Seu commit diz “**maoridade**”. Se você quiser corrigir o texto do **último commit** (opcional):
+
+```bash
+git commit --amend -m "feat: adiciona regra de maioridade no domínio"
+git push --force-with-lease
+```
+
+(Amend reescreve o último commit; o `--force-with-lease` é a forma mais segura de forçar.) [\[stackoverflow.com\]](https://stackoverflow.com/questions/1139762/ignore-files-that-have-already-been-committed-to-a-git-repository)
+
+***
+
+### O caminho mais curto pra você agora
+
+Execute **só isso**:
+
+```bash
+git rm -r --cached app/build
+git commit -m "chore: remove artefatos de build do controle de versão"
+git push
+```
+
+Depois rode `git status`. Isso deve zerar essa lista enorme de uma vez.
+
+---
+## Problema solucionado.
+
+---
+
+✅ O que você fez (e por que funcionou)
+Você efetivamente:
+
+Removeu o app/build do controle de versão (parou de rastrear)
+Ignorou builds/caches no .gitignore para o futuro
+Commitou e pushou essa “limpeza”
+
+Esse é o fluxo correto quando .gitignore “não pega” porque os arquivos já estavam rastreados.
+
+🔧 Pequenos upgrades que valem muito (e são rápidos)
+1) Ajustar .gitignore para multi-módulo (blindagem)
+Se ainda não estiver assim, recomendo garantir no .gitignore:
+Git.gradle/**/build/.kotlin/.idea/*.imlout/Mostrar mais linhas
+Isso evita o mesmo problema caso você adicione novos módulos além de app.
+2) Corrigir o typo “maoridade” (opcional, mas deixa bonito)
+Você tem um commit com mensagem “maoridade”. Se quiser arrumar sem reescrever histórico antigo, deixe como está (não faz mal).
+Se quiser corrigir só o último commit (se ele for o de typo), use:
+Shellgit commit --amend -m "feat: adiciona regra de maioridade no domínio"git push --force-with-leaseMostrar mais linhas
+(Use apenas se você estiver sozinho no repositório, como portfólio.)
+
+---
+
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (8)
+
+---
+
+> # 📦 Estrutura atual do projeto ktProfissional
+
+Depois de implementar a regra de negócio no `domain`, a estrutura do projeto ktProfissional ficou assim no disco (c:/):
+
+```text
+C:.
+├───.gradle
+│   ├───8.14.2
+│   │   ├───checksums
+│   │   ├───executionHistory
+│   │   ├───expanded
+│   │   ├───fileChanges
+│   │   ├───fileHashes
+│   │   └───vcsMetadata
+│   ├───buildOutputCleanup
+│   ├───configuration-cache
+│   │   ├───8kfhx0wvfitzlb2sgd5nhzeom
+│   │   ├───9oi7mzdiuzf8oy43whxkh68ay
+│   │   ├───d066e86f-a8e8-48ae-962b-1ef8bd9571e4
+│   │   └───dcac22a2-f085-4d62-a321-35c35c843243
+│   └───vcs-1
+├───.idea
+├───.kotlin
+│   └───sessions
+├───app
+│   ├───build
+│   │   ├───classes
+│   │   │   └───kotlin
+│   │   │       └───main
+│   │   │           ├───br
+│   │   │           │   └───com
+│   │   │           │       └───ktprofissional
+│   │   │           │           ├───app
+│   │   │           │           └───domain
+│   │   │           └───META-INF
+│   │   └───kotlin
+│   │       └───compileKotlin
+│   │           ├───cacheable
+│   │           │   └───caches-jvm
+│   │           │       ├───inputs
+│   │           │       ├───jvm
+│   │           │       │   └───kotlin
+│   │           │       └───lookups
+│   │           ├───classpath-snapshot
+│   │           └───local-state
+│   └───src
+│       ├───main
+│       │   ├───kotlin
+│       │   │   └───br
+│       │   │       └───com
+│       │   │           └───ktprofissional
+│       │   │               ├───app
+│       │   │               ├───domain
+│       │   │               ├───service
+│       │   │               └───util
+│       │   └───resources
+│       └───test
+│           ├───kotlin
+│           │   └───org
+│           │       └───example
+│           └───resources
+├───build
+│   └───reports
+│       └───configuration-cache
+│           ├───8kfhx0wvfitzlb2sgd5nhzeom
+│           │   └───55ver0kg6jd0d33hwyo5f5evy
+│           └───9oi7mzdiuzf8oy43whxkh68ay
+│               └───c1fzidzeufkkyc157pyfrrdkk
+├───docs
+└───gradle
+    └───wrapper
+```
+
+# 🚀 Próximo passo natural (e bem profissional): teste unitário da regra de domínio
+
+Agora que seu domínio tem uma regra real (`RegraMaioridade`), o passo mais “profissional” é criar **testes JUnit** para garantir comportamento.
+
+## ✅ Crie o teste
+
+Arquivo:
+
+    app/src/test/kotlin/br/com/ktprofissional/domain/RegraMaioridadeTest.kt
+
+Conteúdo:
+
+```kotlin
+package br.com.ktprofissional.domain
+
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+class RegraMaioridadeTest {
+
+    @Test
+    fun `deve considerar apta quando idade for maior ou igual a idade minima`() {
+        val regra = RegraMaioridade(idadeMinima = 18)
+        val pessoa = Pessoa(nome = "Ana", idade = 18)
+
+        assertTrue(regra.isApta(pessoa))
+    }
+
+    @Test
+    fun `nao deve considerar apta quando idade for menor que idade minima`() {
+        val regra = RegraMaioridade(idadeMinima = 18)
+        val pessoa = Pessoa(nome = "Joao", idade = 17)
+
+        assertFalse(regra.isApta(pessoa))
+    }
+}
+```
+
+## ✅ Rode os testes
+
+```bash
+./gradlew test
+```
+
+## ✅ Versione
+
+```bash
+git add app/src/test/kotlin/br/com/ktprofissional/domain/RegraMaioridadeTest.kt
+git commit -m "test: adiciona testes para regra de maioridade"
+git push
+```
+
+***
+
+## Quer seguir por qual trilha agora?
+
+Eu recomendo esta ordem:
+
+1.  ✅ **Testes do domínio** (mais profissional)
+2.  Criar um **service** (caso de uso) que usa a regra
+3.  Evoluir o domínio com **Value Objects** (ex.: `Idade` com validação)
+
+Se você topar, eu já te passo o **Service** (caso de uso) logo em seguida aos testes, mantendo a arquitetura limpinha.
