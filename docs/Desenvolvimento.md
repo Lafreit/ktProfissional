@@ -1588,3 +1588,745 @@ Eu recomendo esta ordem:
 3.  Evoluir o domínio com **Value Objects** (ex.: `Idade` com validação)
 
 Se você topar, eu já te passo o **Service** (caso de uso) logo em seguida aos testes, mantendo a arquitetura limpinha.
+
+---
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (9)
+
+---
+Ótima pergunta — **essa árvore está correta tecnicamente**, mas ela mistura **duas realidades diferentes**:  
+1️⃣ o que **faz parte do projeto** e  
+2️⃣ o que são **artefatos locais/temporários** gerados pelo Gradle, Kotlin e IDE.
+
+Vou organizar isso com clareza e te dizer **o que está certo, o que é esperado, o que NÃO deve ser versionado** e **qual é o próximo ajuste estrutural natural**.
+
+> Obs.: procurei por arquivos, e‑mails ou reuniões internas relacionados ao `ktProfissional` e não há registros adicionais para cruzar — seguimos 100% com a estrutura local que você mostrou.
+
+***
+
+## ✅ 1️⃣ Estrutura **correta e saudável** do projeto (o que importa)
+
+Se isolarmos **apenas o que é código e configuração real**, o seu projeto está **exatamente onde deveria estar**:
+
+```text
+ktProfissional/
+├── app/
+│   └── src/
+│       ├── main/
+│       │   ├── kotlin/
+│       │   │   └── br/com/ktprofissional/
+│       │   │       ├── app
+│       │   │       ├── domain   ✅ regra de negócio aqui
+│       │   │       ├── service
+│       │   │       └── util
+│       │   └── resources
+│       └── test/
+│           ├── kotlin
+│           └── resources
+├── docs/
+└── gradle/wrapper
+```
+
+✅ **Isso está certo e profissional**  
+✅ `domain` criado corretamente  
+✅ separação `app / domain / service / util` correta  
+✅ estrutura Gradle multi‑project (`root + app`) correta
+
+***
+
+## ⚠️ 2️⃣ O que aparece no `tree` mas **NÃO faz parte do projeto**
+
+Essas pastas **devem existir localmente**, mas **NUNCA devem entrar no Git** (e já vimos que você corrigiu isso):
+
+```text
+.gradle/
+.idea/
+.kotlin/
+app/build/
+build/
+```
+
+### O que são elas (para fixar o conceito):
+
+| Pasta        | O que é                    | Deve versionar? |
+| ------------ | -------------------------- | --------------- |
+| `.gradle/`   | cache do Gradle            | ❌ nunca         |
+| `.idea/`     | config do IntelliJ         | ❌ nunca         |
+| `.kotlin/`   | cache do compilador Kotlin | ❌ nunca         |
+| `app/build/` | bytecode, caches, classes  | ❌ nunca         |
+| `build/`     | relatórios do Gradle       | ❌ nunca         |
+
+✅ Elas **continuam aparecendo no `tree`** porque o `tree` mostra o disco  
+✅ Elas **não aparecem mais no Git** (confirmado pelo `git status clean`)  
+✅ Isso é exatamente o comportamento esperado
+
+👉 **Não há nenhum erro aqui**.
+
+***
+
+## ⚠️ 3️⃣ O único ponto estrutural que ainda está “incompleto”
+
+Você mesmo já identificou implicitamente:
+
+```text
+app/src/test/kotlin/org/example
+```
+
+Enquanto o código real está em:
+
+```text
+app/src/main/kotlin/br/com/ktprofissional
+```
+
+Isso não quebra o build, **mas quebra a coerência do projeto**.
+
+***
+
+## ✅ 4️⃣ Ajuste estrutural recomendado (próximo passo lógico)
+
+### ✅ O que fazer
+
+Espelhar a estrutura de `main` dentro de `test`.
+
+#### Estrutura desejada:
+
+```text
+app/src/test/kotlin/
+└── br/com/ktprofissional/
+    └── domain
+```
+
+### Comandos:
+
+```bash
+mkdir -p app/src/test/kotlin/br/com/ktprofissional/domain
+```
+
+Depois disso:
+
+*   seus testes ficam no **mesmo package lógico**
+*   imports ficam limpos
+*   leitura do projeto fica profissional
+*   qualquer dev entende o projeto em 30 segundos
+
+***
+
+## ✅ 5️⃣ Estado atual do projeto (avaliação honesta)
+
+Neste momento, o `ktProfissional` está em um **nível muito bom**, acima do que se vê em projetos “iniciais”:
+
+✅ Gradle configurado corretamente  
+✅ Git limpo (sem lixo de build)  
+✅ Domínio separado  
+✅ Primeira regra de negócio real  
+✅ Histórico de commits coerente  
+✅ Documentação criada
+
+O que falta **não é correção**, é **evolução natural**.
+
+***
+
+## ▶️ Próximo passo sugerido (ordem correta)
+
+Agora você tem três caminhos **bons** — a ordem recomendada é:
+
+### 🔹 Opção A (mais profissional)
+
+➡️ Criar **testes unitários do domínio** (usando a estrutura corrigida)
+
+### 🔹 Opção B
+
+➡️ Criar um **service (caso de uso)** que consome `RegraMaioridade`
+
+### 🔹 Opção C
+
+➡️ Evoluir o domínio com **Value Object** (`Idade` em vez de `Int`)
+
+***
+
+Se você quiser, eu **já te entrego o próximo passo completo**, sem pular nada:
+
+👉 Quer seguir com **testes do domínio**, **service**, ou **value objects**?
+
+---
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (10)
+
+---
+Perfeito, obrigado pela correção ✅ — isso **não muda a análise técnica**, mas é importante esclarecer **por que a árvore parece “maior”**.
+
+## ✅ O que muda (e o que NÃO muda) ao usar **CMD** vs **Git Bash**
+
+### ✅ O que muda
+
+*   **`tree` no CMD** mostra **tudo que existe no disco**, incluindo:
+    *   pastas ocultas (`.gradle`, `.kotlin`, `.idea`)
+    *   caches e artefatos de build (`app/build`, `build`)
+*   Ele **não tem relação com o Git** (não sabe o que é versionado ou ignorado).
+
+### ❌ O que NÃO muda
+
+*   O **estado do repositório Git**.
+*   A **estrutura correta do projeto**.
+*   O fato de que **essas pastas NÃO fazem parte do código versionado**.
+
+Isso fica comprovado por:
+
+    git status
+    nothing to commit, working tree clean
+
+👉 Ou seja: **o Git está limpo**. Tudo certo.
+
+***
+
+## ✅ Como interpretar corretamente essa árvore (regra de ouro)
+
+Pense assim:
+
+*   **CMD `tree`** = *visão do sistema de arquivos*
+*   **`git status`** = *visão do que importa para o repositório*
+
+No seu caso:
+
+*   A árvore do CMD **deve mesmo mostrar** `.gradle/`, `.kotlin/`, `app/build/`, etc.
+*   O Git **não está rastreando nada disso** (e não voltará a rastrear).
+
+✅ Isso é o comportamento **esperado e correto** em projetos Gradle/Kotlin.
+
+***
+
+## ✅ Estado real do `ktProfissional` (resumo final)
+
+**Código e estrutura válidos:**
+
+    app/src/main/kotlin/br/com/ktprofissional/
+    ├── app
+    ├── domain     ✅ regra de negócio
+    ├── service
+    └── util
+
+**Artefatos locais (existem no disco, mas NÃO no Git):**
+
+    .gradle/
+    .kotlin/
+    .idea/
+    app/build/
+    build/
+
+✅ Separação perfeita entre **código** e **infra local**  
+✅ Projeto saudável  
+✅ Nada a corrigir aqui
+
+***
+
+## 🔧 Único ajuste estrutural ainda recomendado (independente do CMD)
+
+Alinhar **testes** com o package real do projeto:
+
+    app/src/test/kotlin/br/com/ktprofissional/domain
+
+Atualmente você ainda tem:
+
+    app/src/test/kotlin/org/example
+
+Isso não quebra nada, mas **quebra coerência**. É o próximo passo natural.
+
+***
+
+## Próximo passo (sugestão objetiva)
+
+Agora que a confusão “CMD vs Git” está resolvida, o caminho ideal é **um destes**:
+
+1️⃣ Criar o **teste unitário da RegraMaioridade** no package correto  
+2️⃣ Criar um **service (caso de uso)** que consome a regra  
+3️⃣ Evoluir o domínio com **Value Object** (`Idade`)
+
+Diga qual você quer seguir e eu já entro direto no código.
+
+---
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (11)
+
+---
+Ótima pergunta — agora entramos **no coração de qualidade de código** 👍  
+Vou te explicar **como criar testes unitários para a regra de maioridade**, **alinhado exatamente com a estrutura real do seu projeto**, sem pressupor nada errado.
+
+Vou dividir em **conceito → estrutura → código → execução → boas práticas**.
+
+***
+
+## ✅ 1️⃣ O que significa “testar a regra de maioridade”
+
+Sua regra de negócio está no **domain**:
+
+```kotlin
+RegraMaioridade.isApta(pessoa)
+```
+
+Um **teste unitário correto** deve verificar:
+
+*   ✅ comportamento esperado para **casos válidos**
+*   ✅ comportamento esperado para **casos inválidos**
+*   ❌ sem depender de `Main`
+*   ❌ sem rodar Gradle “inteiro”
+*   ❌ sem acessar arquivo, console, banco, etc.
+
+Ou seja: **domínio puro, teste puro**.
+
+***
+
+## ✅ 2️⃣ Onde os testes DEVEM ficar (estrutura correta)
+
+Regra fundamental em projetos Gradle/Kotlin:
+
+> **A estrutura de `test` deve espelhar a estrutura de `main`.**
+
+Você tem hoje em `main`:
+
+    app/src/main/kotlin/br/com/ktprofissional/domain
+
+✅ Logo, o local correto para o teste é:
+
+    app/src/test/kotlin/br/com/ktprofissional/domain
+
+### Criando a estrutura (CMD ou Git Bash)
+
+Na raiz do projeto (`ktProfissional`):
+
+```bash
+mkdir app\src\test\kotlin\br\com\ktprofissional\domain
+```
+
+(Se estiver no Git Bash, use `/` em vez de `\`.)
+
+***
+
+## ✅ 3️⃣ Criando o teste unitário da regra
+
+Crie o arquivo:
+
+    app/src/test/kotlin/br/com/ktprofissional/domain/RegraMaioridadeTest.kt
+
+### Conteúdo completo do teste
+
+```kotlin
+package br.com.ktprofissional.domain
+
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+class RegraMaioridadeTest {
+
+    @Test
+    fun `deve considerar apta quando idade for maior ou igual a idade minima`() {
+        val regra = RegraMaioridade(idadeMinima = 18)
+        val pessoa = Pessoa(nome = "Ana", idade = 18)
+
+        val resultado = regra.isApta(pessoa)
+
+        assertTrue(resultado)
+    }
+
+    @Test
+    fun `nao deve considerar apta quando idade for menor que idade minima`() {
+        val regra = RegraMaioridade(idadeMinima = 18)
+        val pessoa = Pessoa(nome = "Joao", idade = 17)
+
+        val resultado = regra.isApta(pessoa)
+
+        assertFalse(resultado)
+    }
+}
+```
+
+***
+
+## ✅ 4️⃣ Por que esse teste é “bem feito”
+
+✅ Testa **uma coisa por vez**  
+✅ Usa **nomes legíveis** (backticks são ótimos no Kotlin)  
+✅ Não depende de `Main.kt`  
+✅ Não usa mocks (não precisa)  
+✅ Não quebra se a aplicação crescer
+
+Isso é **teste unitário de domínio de verdade**.
+
+***
+
+## ✅ 5️⃣ Rodando os testes
+
+Na raiz do projeto:
+
+```bash
+./gradlew test
+```
+
+### Resultado esperado
+
+*   ✅ Build successful
+*   ✅ Testes verdes
+*   ✅ Relatórios em:
+        app/build/reports/tests/test/index.html
+
+Você pode abrir esse HTML no navegador para ver o relatório visual.
+
+***
+
+## ✅ 6️⃣ Limpando o “lixo” antigo de testes (opcional, mas recomendado)
+
+Você ainda tem:
+
+    app/src/test/kotlin/org/example
+
+Isso veio do `gradle init` e **não representa mais o seu projeto**.
+
+Se só houver arquivos de exemplo lá, você pode remover:
+
+```bash
+rm -rf app/src/test/kotlin/org
+```
+
+✅ Isso deixa o projeto **coerente e profissional**.
+
+***
+
+## ✅ 7️⃣ Versionando os testes
+
+```bash
+git add app/src/test/kotlin/br/com/ktprofissional/domain/RegraMaioridadeTest.kt
+git commit -m "test: adiciona testes unitários para regra de maioridade"
+git push
+```
+
+***
+
+## 🧠 Onde você chegou (importante reconhecer)
+
+Neste ponto, você já tem:
+
+✅ Regra de negócio isolada  
+✅ Testes unitários de domínio  
+✅ Estrutura Gradle correta  
+✅ Git limpo  
+✅ Projeto com padrão profissional
+
+Isso **não é básico** — é fundação sólida.
+
+***
+
+## ▶️ Próximo passo natural (escolha consciente)
+
+Agora o fluxo profissional é:
+
+1️⃣ Criar um **service (caso de uso)** que usa `RegraMaioridade`  
+2️⃣ Evoluir o domínio com **Value Object** (`Idade` em vez de `Int`)  
+3️⃣ Introduzir **exceção de domínio** quando a pessoa não for apta
+
+Se quiser, eu sigo **exatamente nessa ordem**, com código pronto.  
+👉 Qual você quer fazer agora?
+
+---
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (12)
+
+---
+Isso aconteceu porque você está **no diretório errado para o caminho que digitou** (e também faltou o `-p` para criar pais intermediários).
+
+Pelo seu prompt, você está aqui:
+
+    .../ktProfissional/app/src/test
+
+E tentou criar:
+
+    app/src/test/kotlin/br/com/ktprofissional/domain
+
+Só que, **a partir de `app/src/test`**, esse caminho vira na prática:
+
+    app/src/test/app/src/test/kotlin/...
+
+E como não existe `app/src/test/app/...`, o `mkdir` reclama “No such file or directory”. Além disso, sem `-p`, ele não cria as pastas intermediárias. O `-p` serve exatamente para “criar diretórios intermediários se necessário”. [\[ibm.com\]](https://www.ibm.com/docs/en/i/7.6.0?topic=directories-mkdir), [\[linuxize.com\]](https://linuxize.com/post/how-to-create-directories-in-linux-with-the-mkdir-command/)
+
+***
+
+## ✅ Jeito certo (3 opções)
+
+### ✅ Opção A (mais simples): crie **relativo ao diretório atual**
+
+Como você já está em `app/src/test`, basta:
+
+```bash
+mkdir -p kotlin/br/com/ktprofissional/domain
+```
+
+✅ Isso vai criar:
+
+    app/src/test/kotlin/br/com/ktprofissional/domain
+
+***
+
+### ✅ Opção B: volte para a raiz do projeto e crie o caminho completo
+
+```bash
+cd ~/Projetos/kotlin/kotlin/ktProfissional
+mkdir -p app/src/test/kotlin/br/com/ktprofissional/domain
+```
+
+***
+
+### ✅ Opção C: use caminho absoluto (à prova de erro)
+
+```bash
+mkdir -p /c/Users/Usuario/Projetos/kotlin/kotlin/ktProfissional/app/src/test/kotlin/br/com/ktprofissional/domain
+```
+
+***
+
+## ✅ Depois disso, crie o arquivo de teste no lugar certo
+
+Crie:
+
+`app/src/test/kotlin/br/com/ktprofissional/domain/RegraMaioridadeTest.kt`
+
+com o conteúdo:
+
+```kotlin
+package br.com.ktprofissional.domain
+
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+class RegraMaioridadeTest {
+
+    @Test
+    fun `deve considerar apta quando idade for maior ou igual a idade minima`() {
+        val regra = RegraMaioridade(idadeMinima = 18)
+        val pessoa = Pessoa(nome = "Ana", idade = 18)
+        assertTrue(regra.isApta(pessoa))
+    }
+
+    @Test
+    fun `nao deve considerar apta quando idade for menor que idade minima`() {
+        val regra = RegraMaioridade(idadeMinima = 18)
+        val pessoa = Pessoa(nome = "Joao", idade = 17)
+        assertFalse(regra.isApta(pessoa))
+    }
+}
+```
+
+***
+
+## ✅ Rodar os testes
+
+Na raiz do projeto:
+
+```bash
+./gradlew test
+```
+
+***
+
+### Por que o `-p` é importante?
+
+Sem `-p`, o `mkdir` exige que todo o “prefixo” do caminho já exista; com `-p`, ele cria os diretórios intermediários automaticamente. [\[ibm.com\]](https://www.ibm.com/docs/en/i/7.6.0?topic=directories-mkdir), [\[linuxize.com\]](https://linuxize.com/post/how-to-create-directories-in-linux-with-the-mkdir-command/)
+
+***
+
+Se você quiser o caminho mais rápido agora: rode exatamente este comando (porque você já está em `app/src/test`):
+
+```bash
+mkdir -p kotlin/br/com/ktprofissional/domain
+```
+---
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (13)
+
+---
+Você **não está errando no teste novo** — o build está falhando por causa de **um teste antigo gerado pelo `gradle init`** que ficou na pasta padrão `org/example`.
+
+O erro diz exatamente isso:
+
+> `app/src/test/kotlin/org/example/AppTest.kt ... Unresolved reference 'App'`
+
+Ou seja: existe um arquivo **`AppTest.kt`** em `app/src/test/kotlin/org/example/` que tenta usar uma classe **`App`** que **não existe mais** (você mudou seu projeto para `br.com.ktprofissional` e provavelmente também mudou/removou o “App” padrão).  
+Resultado: o compilador trava antes mesmo de chegar no seu teste da regra de maioridade.
+
+***
+
+# ✅ Como resolver (2 opções, recomendo a A)
+
+## ✅ Opção A (recomendada): remover o teste antigo `org/example`
+
+Como você já migrou o projeto para `br.com.ktprofissional`, esse `org/example` virou “lixo de template”.
+
+No Git Bash, a partir da raiz `ktProfissional`:
+
+```bash
+rm -rf app/src/test/kotlin/org
+```
+
+> Isso remove o pacote inteiro `org.example` de testes, incluindo `AppTest.kt`, que está quebrando sua build.
+
+Depois rode:
+
+```bash
+./gradlew test
+```
+
+✅ Deve compilar e executar normalmente.
+
+***
+
+## Opção B: corrigir `AppTest.kt` para apontar para a classe certa
+
+Se você quiser manter esse teste (não recomendo, porque ele é só boilerplate), você teria que:
+
+1.  abrir `app/src/test/kotlin/org/example/AppTest.kt`
+2.  ajustar `package ...` e imports para seu package real
+3.  trocar `App` pela classe real que existe hoje (provavelmente `MainKt` não é uma classe instanciável, então o teste teria que mudar bastante)
+
+Por isso, a opção A é a mais limpa.
+
+***
+
+# ✅ Garantindo que seu teste da regra de maioridade está no lugar certo
+
+Seu teste deve estar em:
+
+    app/src/test/kotlin/br/com/ktprofissional/domain/RegraMaioridadeTest.kt
+
+E começar com:
+
+```kotlin
+package br.com.ktprofissional.domain
+```
+
+***
+
+# ✅ Depois que os testes passarem: versionar a correção
+
+Quando `./gradlew test` rodar ok:
+
+```bash
+git add -A
+git commit -m "chore: remove teste padrão org.example que quebrava o build"
+git push
+```
+
+***
+
+## Por que isso aconteceu?
+
+Porque o `gradle init` cria um esqueleto em `org.example` (inclusive testes). Você migrou o código principal para `br.com.ktprofissional`, mas o teste antigo ficou para trás e agora referencia uma classe que não existe. Isso é bem comum quando se “profissionaliza” o package após o init.
+
+***
+
+## Próximo passo rápido
+
+Rode este comando (na raiz do projeto) e em seguida `./gradlew test`:
+
+```bash
+rm -rf app/src/test/kotlin/org
+./gradlew test
+```
+
+Se ainda aparecer algum erro, cole a nova mensagem aqui que eu te digo exatamente qual arquivo ficou faltando ajustar.
+
+---
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (14)
+
+---
+Perfeito! ✅ Esse `BUILD SUCCESSFUL` confirma que:
+
+*   O **código de testes compilou** (`compileTestKotlin` passou)
+*   Os **testes foram executados** com sucesso
+*   O Gradle reutilizou o **configuration cache** (“Reusing configuration cache”), então a execução ficou mais rápida nesta rodada
+
+Não encontrei materiais internos (arquivos/e-mails/reuniões) com conteúdo adicional do seu `ktProfissional` para aproveitar aqui—seguimos com base no que você está fazendo localmente. citeturn26search\_metadata
+
+***
+
+## ✅ Próximos passos recomendados (bem práticos e profissionais)
+
+### 1) Ver o relatório de testes (para ter evidência visual)
+
+O Gradle costuma gerar um relatório HTML. Em projetos Gradle, ele fica normalmente em algo como:
+
+*   `app/build/reports/tests/test/index.html`
+
+Abra esse arquivo no navegador para ver quais testes rodaram e o tempo de execução (é ótimo para portfólio e para depurar quando algum falhar).
+
+***
+
+### 2) Versionar as mudanças do teste (se ainda não fez)
+
+Como você removeu o `org/example/AppTest.kt` e criou o novo teste no package correto, suba isso no Git:
+
+```bash
+git status
+git add -A
+git commit -m "test: adiciona testes da regra de maioridade e remove template org.example"
+git push
+```
+
+> Dica: `git add -A` é conveniente aqui porque captura tanto o arquivo novo quanto a remoção do diretório antigo `org/`.
+
+***
+
+### 3) Melhorar um pouco a “qualidade do domínio” (próximo salto)
+
+Agora que a regra está testada, você pode evoluir o domínio em duas direções (ambas profissionais):
+
+**Opção A — Validar entrada (robustez do domínio):**  
+Evitar idades inválidas (ex.: negativa). Você pode:
+
+*   lançar `IllegalArgumentException` ao criar `Pessoa`, ou
+*   criar um Value Object `Idade` que garante consistência
+
+**Opção B — Criar um “caso de uso” em `service`:**  
+Um serviço que decide o fluxo (ex.: “validar cadastro”) usando `RegraMaioridade`, mantendo o `domain` puro e o `app` apenas orquestrando.
+
+***
+
+## 🚀 Sugestão objetiva do que fazer agora (minha recomendação)
+
+O próximo passo mais “cara de projeto real” é **Opção B: criar um service**.
+
+Exemplo de caso de uso (bem enxuto):
+
+*   `service/ValidarCadastroService.kt`
+*   recebe `Pessoa`
+*   usa `RegraMaioridade`
+*   retorna um resultado (apto/não apto) ou lança `PessoaNaoAptaException`
+
+E aí você cria mais testes (agora para o service), mantendo domínio sólido.
+
+***
+
+### Quer que eu te passe o próximo código (Service + testes) já no padrão do seu projeto?
+
+Eu consigo te entregar um pacote completo com:
+
+*   `ValidarCadastroService.kt`
+*   `ResultadoValidacao` (sealed class) **ou** exceção de domínio
+*   testes JUnit correspondentes
+
+Basta me dizer qual estilo você prefere para o fluxo:
+
+1.  **Retornar resultado** (mais funcional e explícito)
+2.  **Lançar exceção** quando não apto (mais comum em regras de validação)
+
+---
+> # 🔄 Projeto ktProfissional
+> Seguindo com a transcrição do desenvolvimento.
+> Seguindo com a fase (15)
+
+---
